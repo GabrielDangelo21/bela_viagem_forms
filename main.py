@@ -4,6 +4,8 @@ from db import (
     search_clients_name,
     search_clients_email,
     search_clients_document,
+    get_client,
+    insert_trip,
 )
 
 
@@ -105,6 +107,63 @@ if __name__ == "__main__":
 
                 else:
                     print("Opção inválida. Tente novamente.")
+
+        elif option == "4":
+            client_id_raw = input("Digite o id do cliente: ").strip()
+            try:
+                client_id = int(client_id_raw)
+            except ValueError:
+                print("ID inválido. Digite um número.")
+                continue
+
+            client = get_client(client_id)
+            if not client:
+                print("Nenhum cliente com o id selecionado.")
+                continue
+
+            destination = input("Digite o destino: ").strip()
+            start_date = input("Digite a data de ida (YYYY-MM-DD): ").strip()
+
+            oneway = input("A viagem é somente ida? (s/n): ").strip().lower()
+            if oneway == "n":
+                end_date = input("Digite a data de volta (YYYY-MM-DD): ").strip()
+            else:
+                end_date = None
+
+            travelers_qty_raw = input("Digite a quantidade de pessoas: ").strip()
+            try:
+                travelers_qty = int(travelers_qty_raw)
+            except ValueError:
+                print("Quantidade inválida. Digite um número.")
+                continue
+
+            flight = input("Deseja passagem? (s/n): ").strip().lower()
+            hotel = input("Deseja hospedagem? (s/n): ").strip().lower()
+            car = input("Deseja alugar um carro? (s/n): ").strip().lower()
+            insurance = input("Deseja contratar um seguro? (s/n): ").strip().lower()
+
+            flight_int = 1 if flight == "s" else 0
+            hotel_int = 1 if hotel == "s" else 0
+            car_int = 1 if car == "s" else 0
+            insurance_int = 1 if insurance == "s" else 0
+
+            try:
+                trip_id = insert_trip(
+                    client_id,
+                    destination,
+                    start_date,
+                    end_date,
+                    travelers_qty,
+                    flight_int,
+                    hotel_int,
+                    car_int,
+                    insurance_int,
+                )
+                print(
+                    f"Viagem cadastrada para o cliente ID {client_id}. ID da viagem: {trip_id}"
+                )
+            except ValueError as e:
+                print("Erro:", e)
 
         else:
             print("Opção inválida. Tente novamente.")

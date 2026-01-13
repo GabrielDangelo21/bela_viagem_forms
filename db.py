@@ -118,10 +118,65 @@ def search_clients_document(term):
     return results
 
 
+def get_client(client_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """SELECT id, nome, email, telefone, documento FROM clientes WHERE id = ?""",
+        (client_id,),
+    )
+    result = cursor.fetchone()
+    conn.close()
+    return result
+
+
+def insert_trip(
+    client_id,
+    destination,
+    start_date,
+    end_date,
+    travelers_qty,
+    flight,
+    hotel,
+    car,
+    insurance,
+    status="RASCUNHO",
+):
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            INSERT INTO viagens
+            (cliente_id, destino, data_ida, data_volta, qtd_viajantes,
+             passagem, hospedagem, carro, seguro, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                client_id,
+                destination,
+                start_date,
+                end_date,
+                travelers_qty,
+                flight,
+                hotel,
+                car,
+                insurance,
+                status,
+            ),
+        )
+
+        conn.commit()
+        return cursor.lastrowid
+
+    except sqlite3.IntegrityError as e:
+        raise ValueError("Cliente não encontrado ou erro de integridade.") from e
+
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     init_db()
-
-    clients = list_clients()
-    print("Clientes cadastrados:")
-    for c in clients:
-        print(c)
+    print(get_client(1))
