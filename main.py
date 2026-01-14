@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from db import (
     insert_client,
     list_clients,
@@ -36,8 +38,108 @@ def print_clients(results):
         for client in results:
             client_id, name, email, phone, document = client
             print(
-                f"ID: {client_id} | Nome: {name} | Email: {email} | Documento: {document}"
+                f"ID: {client_id} | Nome: {name} | Email: {email} | Telefone: {phone} | Documento: {document}"
             )
+
+
+def ask_yes_no(prompt):
+    while True:
+        answer = input(prompt).strip().lower()
+        if answer in ("s", "sim", "y", "yes"):
+            return True
+        elif answer in ("n", "nao", "não", "no"):
+            return False
+        else:
+            print("Resposta inválida. Digite 's' para sim ou 'n' para não.")
+
+
+def ask_int(prompt, min_value=1):
+    while True:
+        try:
+            answer = int(input(prompt).strip())
+        except ValueError:
+            print("Entrada inválida. Digite um número inteiro.")
+            continue
+        if answer < min_value:
+            print(f"Digite um número maior ou igual a {min_value}.")
+            continue
+        else:
+            return answer
+
+
+def ask_date(prompt):
+    while True:
+        raw_date = input(prompt).strip()
+        try:
+            start_date = datetime.strptime(raw_date, "%Y-%m-%d")
+            return start_date.date()
+        except ValueError:
+            print("Digite uma data válida no formato YYYY-MM-DD")
+            continue
+
+
+def ask_return_date(start_date):
+    while True:
+        end_date = ask_date("Digite a data de retorno (YYYY-MM-DD): ")
+        if end_date < start_date:
+            print("A data de retorno não pode ser anterior à data de partida.")
+            continue
+        else:
+            return end_date
+
+
+def handle_create_trip():
+    client_id = ask_int("Digite o id do cliente: ")
+
+    client = get_client(client_id)
+    if not client:
+        print("Nenhum cliente com o id selecionado.")
+        return
+
+    destination = input("Digite o destino: ").strip()
+    if not destination:
+        print("Digite um destino.")
+        return
+
+    start_date = ask_date("Digite a data de partida: (YYYY-MM-DD) ")
+    start_date_str = start_date.isoformat()
+    oneway = ask_yes_no("A viagem é somente ida? (s/n): ")
+    end_date_str = None
+    if oneway:
+        end_date_str = None
+    else:
+        end_date = ask_return_date(start_date)
+        end_date_str = end_date.isoformat() if end_date else None
+
+    travelers_qty = ask_int("Digite a quantidade de pessoas: ", min_value=1)
+
+    flight = ask_yes_no("Deseja passagem? (s/n): ")
+    hotel = ask_yes_no("Deseja hospedagem? (s/n): ")
+    car = ask_yes_no("Deseja alugar um carro? (s/n): ")
+    insurance = ask_yes_no("Deseja contratar um seguro? (s/n): ")
+
+    flight_int = 1 if flight else 0
+    hotel_int = 1 if hotel else 0
+    car_int = 1 if car else 0
+    insurance_int = 1 if insurance else 0
+
+    try:
+        trip_id = insert_trip(
+            client_id,
+            destination,
+            start_date_str,
+            end_date_str,
+            travelers_qty,
+            flight_int,
+            hotel_int,
+            car_int,
+            insurance_int,
+        )
+        print(
+            f"Viagem cadastrada para o cliente ID {client_id}. ID da viagem: {trip_id}"
+        )
+    except ValueError as e:
+        print("Erro:", e)
 
 
 if __name__ == "__main__":
@@ -109,61 +211,7 @@ if __name__ == "__main__":
                     print("Opção inválida. Tente novamente.")
 
         elif option == "4":
-            client_id_raw = input("Digite o id do cliente: ").strip()
-            try:
-                client_id = int(client_id_raw)
-            except ValueError:
-                print("ID inválido. Digite um número.")
-                continue
-
-            client = get_client(client_id)
-            if not client:
-                print("Nenhum cliente com o id selecionado.")
-                continue
-
-            destination = input("Digite o destino: ").strip()
-            start_date = input("Digite a data de ida (YYYY-MM-DD): ").strip()
-
-            oneway = input("A viagem é somente ida? (s/n): ").strip().lower()
-            if oneway == "n":
-                end_date = input("Digite a data de volta (YYYY-MM-DD): ").strip()
-            else:
-                end_date = None
-
-            travelers_qty_raw = input("Digite a quantidade de pessoas: ").strip()
-            try:
-                travelers_qty = int(travelers_qty_raw)
-            except ValueError:
-                print("Quantidade inválida. Digite um número.")
-                continue
-
-            flight = input("Deseja passagem? (s/n): ").strip().lower()
-            hotel = input("Deseja hospedagem? (s/n): ").strip().lower()
-            car = input("Deseja alugar um carro? (s/n): ").strip().lower()
-            insurance = input("Deseja contratar um seguro? (s/n): ").strip().lower()
-
-            flight_int = 1 if flight == "s" else 0
-            hotel_int = 1 if hotel == "s" else 0
-            car_int = 1 if car == "s" else 0
-            insurance_int = 1 if insurance == "s" else 0
-
-            try:
-                trip_id = insert_trip(
-                    client_id,
-                    destination,
-                    start_date,
-                    end_date,
-                    travelers_qty,
-                    flight_int,
-                    hotel_int,
-                    car_int,
-                    insurance_int,
-                )
-                print(
-                    f"Viagem cadastrada para o cliente ID {client_id}. ID da viagem: {trip_id}"
-                )
-            except ValueError as e:
-                print("Erro:", e)
+            handle_create_trip()
 
         else:
             print("Opção inválida. Tente novamente.")
