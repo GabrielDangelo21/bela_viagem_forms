@@ -177,6 +177,22 @@ def insert_trip(
         conn.close()
 
 
+def list_trips_by_client(client_id):
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """ 
+            SELECT id, destino, data_ida, data_volta, qtd_viajantes, passagem, hospedagem, carro, seguro, status FROM viagens WHERE cliente_id = ? ORDER BY id DESC;
+            """,
+            (client_id,),
+        )
+        result = cursor.fetchall()
+        return result
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     init_db()
     print(get_client(1))

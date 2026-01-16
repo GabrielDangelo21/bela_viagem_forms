@@ -8,6 +8,7 @@ from db import (
     search_clients_document,
     get_client,
     insert_trip,
+    list_trips_by_client,
 )
 
 
@@ -42,6 +43,15 @@ def print_clients(results):
             )
 
 
+def format_yes_no(value):
+    sim = "Sim"
+    nao = "Não"
+    if value == 1 or value == True:
+        return sim
+    else:
+        return nao
+
+
 def ask_yes_no(prompt):
     while True:
         answer = input(prompt).strip().lower()
@@ -71,16 +81,25 @@ def ask_date(prompt):
     while True:
         raw_date = input(prompt).strip()
         try:
-            start_date = datetime.strptime(raw_date, "%Y-%m-%d")
-            return start_date.date()
+            start_date = datetime.strptime(raw_date, "%Y-%m-%d").date()
+            return start_date
         except ValueError:
             print("Digite uma data válida no formato YYYY-MM-DD")
             continue
 
 
+def ask_future_date(prompt):
+    while True:
+        prompt_date = ask_date(prompt)
+        if prompt_date < datetime.now().date():
+            print("A data não pode ser anterior à data de hoje.")
+            continue
+        return prompt_date
+
+
 def ask_return_date(start_date):
     while True:
-        end_date = ask_date("Digite a data de retorno (YYYY-MM-DD): ")
+        end_date = ask_future_date("Digite a data de retorno (YYYY-MM-DD): ")
         if end_date < start_date:
             print("A data de retorno não pode ser anterior à data de partida.")
             continue
@@ -101,13 +120,11 @@ def handle_create_trip():
         print("Digite um destino.")
         return
 
-    start_date = ask_date("Digite a data de partida: (YYYY-MM-DD) ")
+    start_date = ask_future_date("Digite a data de partida: (YYYY-MM-DD) ")
     start_date_str = start_date.isoformat()
     oneway = ask_yes_no("A viagem é somente ida? (s/n): ")
     end_date_str = None
-    if oneway:
-        end_date_str = None
-    else:
+    if not oneway:
         end_date = ask_return_date(start_date)
         end_date_str = end_date.isoformat() if end_date else None
 
@@ -140,6 +157,38 @@ def handle_create_trip():
         )
     except ValueError as e:
         print("Erro:", e)
+
+
+def handle_list_trips():
+    client_id = ask_int("Digite o id do cliente: ")
+    client = get_client(client_id)
+    if not client:
+        print("Nenhum cliente com o id selecionado.")
+        return
+    trips = list_trips_by_client(client_id)
+    if not trips:
+        print("O cliente selecionado não possui nenhuma viagem cadastrada.")
+        return
+    for (
+        trip_id,
+        destination,
+        start_date,
+        end_date,
+        travelers_qty,
+        flight,
+        hotel,
+        car,
+        insurance,
+        status,
+    ) in trips:
+        end_date_display = end_date if end_date else "Somente ida"
+        print(f"")
+        print(
+            f"ID: {trip_id} | Destino: {destination} | Data de ida: {start_date} | Data de volta: {end_date_display} | Quantidade de pessoas: {travelers_qty}"
+        )
+        print(
+            f"Passagem: {format_yes_no(flight)} | Hospedagem: {format_yes_no(hotel)} | Carro: {format_yes_no(car)} | Seguro: {format_yes_no(insurance)} | Status: {status}"
+        )
 
 
 if __name__ == "__main__":
@@ -212,6 +261,9 @@ if __name__ == "__main__":
 
         elif option == "4":
             handle_create_trip()
+
+        elif option == "5":
+            handle_list_trips()
 
         else:
             print("Opção inválida. Tente novamente.")
