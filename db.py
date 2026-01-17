@@ -130,7 +130,7 @@ def get_client(client_id):
     return result
 
 
-def get_trip(trip_id):
+def get_trip(trip_id) -> tuple | None:
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -138,8 +138,61 @@ def get_trip(trip_id):
             """SELECT id, cliente_id, destino, status FROM viagens WHERE id = ?""",
             (trip_id,),
         )
-        result = cursor.fetchall()
+        result = cursor.fetchone()
         return result
+    finally:
+        conn.close()
+
+
+def get_trip_full(trip_id) -> tuple | None:
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, cliente_id, destino, data_ida, data_volta, qtd_viajantes, passagem, hospedagem, carro, seguro, status 
+            FROM viagens WHERE id = ?;
+            """,
+            (trip_id,),
+        )
+        result = cursor.fetchone()
+        return result
+    finally:
+        conn.close()
+
+
+def update_trip(
+    trip_id,
+    destino,
+    data_ida,
+    data_volta,
+    qtd_viajantes,
+    passagem,
+    hospedagem,
+    carro,
+    seguro,
+):
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """UPDATE viagens SET destino = ?, data_ida = ?, data_volta = ?, qtd_viajantes = ?, passagem = ?, hospedagem = ?,
+            carro = ?, seguro = ? WHERE id = ?""",
+            (
+                destino,
+                data_ida,
+                data_volta,
+                qtd_viajantes,
+                passagem,
+                hospedagem,
+                carro,
+                seguro,
+                trip_id,
+            ),
+        )
+        conn.commit()
+        updated_rows = cursor.rowcount
+        return updated_rows
     finally:
         conn.close()
 
@@ -215,7 +268,8 @@ def list_trips_by_client(client_id):
         cursor = conn.cursor()
         cursor.execute(
             """ 
-            SELECT id, destino, data_ida, data_volta, qtd_viajantes, passagem, hospedagem, carro, seguro, status FROM viagens WHERE cliente_id = ? ORDER BY id DESC;
+            SELECT id, destino, data_ida, data_volta, qtd_viajantes, passagem, hospedagem, carro, seguro, status 
+            FROM viagens WHERE cliente_id = ? ORDER BY id DESC;
             """,
             (client_id,),
         )

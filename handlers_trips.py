@@ -1,9 +1,13 @@
+from datetime import datetime
+
 from db import (
     get_client,
     get_trip,
+    get_trip_full,
     insert_trip,
     list_trips_by_client,
     update_trip_status,
+    update_trip,
 )
 from utils import ask_future_date, ask_int, ask_return_date, ask_yes_no, format_yes_no
 
@@ -98,6 +102,130 @@ def handle_create_trip():
         print("Erro:", e)
 
 
+def handle_edit_trip():
+    trip_id = ask_int("Digite o id da viagem: ")
+    trip = get_trip_full(trip_id)
+    if not trip:
+        print("Não existe viagem com o id selecionado.")
+        return
+    (
+        trip_id_db,
+        client_id,
+        destination,
+        start_date,
+        end_date,
+        travelers_qty,
+        flight,
+        hotel,
+        car,
+        insurance,
+        status,
+    ) = trip
+    end_date_display = end_date if end_date else "Somente ida"
+    print("")
+    print(
+        f"ID Viagem: {trip_id_db} | ID Cliente: {client_id} | Destino: {destination} | Data de ida: {start_date} | Data de volta: {end_date_display} | Quantidade de pessoas: {travelers_qty}"
+    )
+    print(
+        f"Passagem: {format_yes_no(flight)} | Hospedagem: {format_yes_no(hotel)} | Carro: {format_yes_no(car)} | Seguro: {format_yes_no(insurance)} | Status: {status}"
+    )
+
+    flight = bool(flight)
+    hotel = bool(hotel)
+    car = bool(car)
+    insurance = bool(insurance)
+
+    final_destination = destination
+    change_destination = ask_yes_no("Deseja alterar o destino? (s/n): ")
+    if change_destination:
+        new_destination = input("Digite o novo destino: ").strip()
+        if not new_destination:
+            print("Entrada inválida. Destino não alterado.")
+            final_destination = destination
+        else:
+            final_destination = new_destination
+
+    start_date_date = (
+        datetime.strptime(start_date, "%Y-%m-%d").date() if start_date else None
+    )
+
+    if start_date_date is None:
+        print("Esta viagem não possui data de ida cadastrada.")
+        final_start_date = ask_future_date("Informe a data de ida (YYYY-MM-DD): ")
+    else:
+        final_start_date = start_date_date
+
+    end_date_date = datetime.strptime(end_date, "%Y-%m-%d").date() if end_date else None
+
+    final_end_date = end_date_date
+
+    change_start_date = ask_yes_no("Deseja alterar a data de ida? (s/n): ")
+    if change_start_date:
+        final_start_date = ask_future_date("Digite a nova data de ida (YYYY-MM-DD): ")
+
+    oneway = ask_yes_no("A viagem é somente ida? (s/n): ")
+
+    if oneway:
+        final_end_date = None
+    else:
+        if (
+            final_end_date is None
+            or final_end_date < final_start_date
+            or ask_yes_no("Deseja alterar a data de volta? (s/n): ")
+        ):
+            final_end_date = ask_return_date(final_start_date)
+
+    final_start_date_str = final_start_date.isoformat()
+    final_end_date_str = final_end_date.isoformat() if final_end_date else None
+    final_travelers_qty = travelers_qty
+    change_travelers_qty = ask_yes_no("Deseja alterar a quantidade de pessoas? (s/n): ")
+    if change_travelers_qty:
+        new_travelers_qty = ask_int("Digite a quantidade de pessoas: ", min_value=1)
+        final_travelers_qty = new_travelers_qty
+    final_flight = flight
+    change_flight = ask_yes_no("Deseja alterar passagem? (s/n): ")
+    if change_flight:
+        new_flight = ask_yes_no("Deseja passagem? (s/n): ")
+        final_flight = new_flight
+    final_hotel = hotel
+    change_hotel = ask_yes_no("Deseja alterar hotel? (s/n): ")
+    if change_hotel:
+        new_hotel = ask_yes_no("Deseja hotel? (s/n): ")
+        final_hotel = new_hotel
+    final_car = car
+    change_car = ask_yes_no("Deseja alterar carro? (s/n): ")
+    if change_car:
+        new_car = ask_yes_no("Deseja carro? (s/n): ")
+        final_car = new_car
+    final_insurance = insurance
+    change_insurance = ask_yes_no("Deseja alterar seguro? (s/n): ")
+    if change_insurance:
+        new_insurance = ask_yes_no("Deseja seguro? (s/n): ")
+        final_insurance = new_insurance
+
+    flight_int = 1 if final_flight else 0
+    hotel_int = 1 if final_hotel else 0
+    car_int = 1 if final_car else 0
+    insurance_int = 1 if final_insurance else 0
+
+    updated_trip = update_trip(
+        trip_id_db,
+        final_destination,
+        final_start_date_str,
+        final_end_date_str,
+        final_travelers_qty,
+        flight_int,
+        hotel_int,
+        car_int,
+        insurance_int,
+    )
+    if updated_trip == 1:
+        print("Viagem atualizada com sucesso.")
+        return
+    else:
+        print("Nenhuma alteração realizada ou viagem não encontrada.")
+
+
 def handle_list_trips():
     client_id = ask_int("Digite o id do cliente: ")
     client = get_client(client_id)
@@ -108,7 +236,7 @@ def handle_list_trips():
     print_trips(trips)
 
 
-def handle_update_trip():
+def handle_update_trip_status():
     trip_id = ask_int("Digite o id da viagem: ")
     trip = get_trip(trip_id)
     if not trip:

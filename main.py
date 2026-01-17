@@ -3,7 +3,12 @@ from handlers_clients import (
     handle_list_clients,
     handle_search_clients,
 )
-from handlers_trips import handle_create_trip, handle_list_trips, handle_update_trip
+from handlers_trips import (
+    handle_create_trip,
+    handle_list_trips,
+    handle_edit_trip,
+    handle_update_trip_status,
+)
 
 
 def mostrar_menu() -> None:
@@ -13,7 +18,8 @@ def mostrar_menu() -> None:
     print("3. Buscar cliente")
     print("4. Criar viagem")
     print("5. Listar viagem")
-    print("6. Atualizar status da viagem")
+    print("6. Editar viagem")
+    print("7. Atualizar status da viagem")
     print("0. Sair")
 
 
@@ -44,7 +50,10 @@ if __name__ == "__main__":
             handle_list_trips()
 
         elif option == "6":
-            handle_update_trip()
+            handle_edit_trip()
+
+        elif option == "7":
+            handle_update_trip_status()
 
         else:
             print("Opção inválida. Tente novamente.")
