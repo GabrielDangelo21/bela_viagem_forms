@@ -130,6 +130,38 @@ def get_client(client_id):
     return result
 
 
+def get_trip(trip_id):
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT id, cliente_id, destino, status FROM viagens WHERE id = ?""",
+            (trip_id,),
+        )
+        result = cursor.fetchall()
+        return result
+    finally:
+        conn.close()
+
+
+def update_trip_status(trip_id, new_status):
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """UPDATE viagens SET status = ? WHERE id = ?""",
+            (
+                new_status,
+                trip_id,
+            ),
+        )
+        conn.commit()
+        updated_rows = cursor.rowcount
+        return updated_rows
+    finally:
+        conn.close()
+
+
 def insert_trip(
     client_id,
     destination,
